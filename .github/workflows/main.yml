@@ -1,35 +1,49 @@
-name: Build TIPA
+name: Build Unsigned IPA (Standoff2 Injector)
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - main
 
 jobs:
-  build:
-    runs-on: macos-latest
+  build-unsigned-ipa:
+    name: Build unsigned IPA
+    runs-on: macos-26
+    timeout-minutes: 60
+    defaults:
+      run:
+        working-directory: .  # Твой проект в корне, а не в bilireader-api-ver
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - uses: subosito/flutter-action@v2
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.22.0'
+          channel: stable
+          flutter-version: 3.44.4
+          cache: true
 
-      - name: Disable automatic codesigning
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Generate code
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      - name: Build unsigned IPA
+        run: flutter build ipa --release --no-codesign
+
+      - name: Package unsigned IPA from archive
         run: |
-          sed -i '' 's/CODE_SIGN_STYLE = Automatic;/CODE_SIGN_STYLE = Manual;/g' ios/Runner.xcodeproj/project.pbxproj
-          sed -i '' 's/CODE_SIGN_IDENTITY = "Apple Development"/CODE_SIGN_IDENTITY = ""/g' ios/Runner.xcodeproj/project.pbxproj
-          sed -i '' 's/DEVELOPMENT_TEAM = .*;/DEVELOPMENT_TEAM = "";/g' ios/Runner.xcodeproj/project.pbxproj
-
-      - run: flutter pub get
-
-      # Сборка для симулятора (не требует подписи)
-      - run: flutter build ios --release --simulator --no-codesign
-
-      - run: |
           mkdir -p Payload
-          cp -R build/ios/iphonesimulator/Runner.app Payload/
+          cp -R build/ios/archive/Runner.xcarchive/Products/Applications/Runner.app Payload/
           ditto -c -k --sequesterRsrc --keepParent Payload Standoff2_Injector.tipa
 
-      - uses: actions/upload-artifact@v4
+      - name: Upload TIPA artifact
+        uses: actions/upload-artifact@v4
         with:
           name: Standoff2_Injector
           path: Standoff2_Injector.tipa
+          if-no-files-found: error
