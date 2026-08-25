@@ -29,10 +29,10 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
-      # ⬇️ ДОБАВЛЯЕМ ЭТОТ ШАГ ⬇️
-      - name: Install CocoaPods
-        run: pod install
-        working-directory: ios
+      # ⬇️ УБИРАЕМ ЭТОТ ШАГ ⬇️
+      # - name: Install CocoaPods
+      #   run: pod install
+      #   working-directory: ios
 
       - name: Build unsigned IPA
         run: flutter build ipa --release --no-codesign
