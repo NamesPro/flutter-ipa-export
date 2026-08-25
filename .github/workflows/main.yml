@@ -13,7 +13,7 @@ jobs:
     timeout-minutes: 60
     defaults:
       run:
-        working-directory: .  # Твой проект в корне, а не в bilireader-api-ver
+        working-directory: .
 
     steps:
       - name: Checkout
@@ -29,8 +29,9 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
-      - name: Generate code
-        run: dart run build_runner build --delete-conflicting-outputs
+      # ⬇️ УДАЛИЛИ ЭТОТ ШАГ ⬇️
+      # - name: Generate code
+      #   run: dart run build_runner build --delete-conflicting-outputs
 
       - name: Build unsigned IPA
         run: flutter build ipa --release --no-codesign
