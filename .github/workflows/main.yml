@@ -4,40 +4,31 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-ios:
-    name: 🎉 iOS Build
+  build:
     runs-on: macos-latest
-    timeout-minutes: 30
-    
     steps:
       - uses: actions/checkout@v4
 
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.22.0'
-          channel: 'stable'
-          architecture: x64
-          
+
+      - name: Disable automatic codesigning
+        run: |
+          sed -i '' 's/CODE_SIGN_STYLE = Automatic;/CODE_SIGN_STYLE = Manual;/g' ios/Runner.xcodeproj/project.pbxproj
+          sed -i '' 's/CODE_SIGN_IDENTITY = "Apple Development"/CODE_SIGN_IDENTITY = ""/g' ios/Runner.xcodeproj/project.pbxproj
+          sed -i '' 's/DEVELOPMENT_TEAM = .*;/DEVELOPMENT_TEAM = "";/g' ios/Runner.xcodeproj/project.pbxproj
+
       - run: flutter pub get
 
-      - run: pod repo update
-        working-directory: ios
+      - run: flutter build ipa --release --no-codesign
 
-      - run: flutter build ios --release --no-codesign
+      - run: |
+          mkdir -p Payload
+          cp -R build/ios/archive/Runner.xcarchive/Products/Applications/Runner.app Payload/
+          ditto -c -k --sequesterRsrc --keepParent Payload Standoff2_Injector.tipa
 
-      - run: mkdir -p Payload
-        working-directory: build/ios/iphoneos
-
-      - run: cp -R Runner.app Payload/
-        working-directory: build/ios/iphoneos
-
-      - name: Zip to TIPA
-        run: zip -qq -r -9 Standoff2_Injector.tipa Payload
-        working-directory: build/ios/iphoneos
-
-      - name: Upload TIPA
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
           name: Standoff2_Injector
-          path: build/ios/iphoneos/Standoff2_Injector.tipa
-          if-no-files-found: error
+          path: Standoff2_Injector.tipa
