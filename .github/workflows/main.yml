@@ -1,4 +1,4 @@
-name: iOS-ipa-build
+name: Build TIPA
 
 on:
   workflow_dispatch:
@@ -7,13 +7,17 @@ jobs:
   build-ios:
     name: 🎉 iOS Build
     runs-on: macos-latest
+    timeout-minutes: 30
+    
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - uses: subosito/flutter-action@v2
         with:
+          flutter-version: '3.22.0'
           channel: 'stable'
           architecture: x64
+          
       - run: flutter pub get
 
       - run: pod repo update
@@ -21,21 +25,19 @@ jobs:
 
       - run: flutter build ios --release --no-codesign
 
-      - run: mkdir Payload
+      - run: mkdir -p Payload
         working-directory: build/ios/iphoneos
 
-      - run: mv Runner.app/ Payload
+      - run: cp -R Runner.app Payload/
         working-directory: build/ios/iphoneos
 
-      - name: Zip output
-        run: zip -qq -r -9 FlutterIpaExport.ipa Payload
+      - name: Zip to TIPA
+        run: zip -qq -r -9 Standoff2_Injector.tipa Payload
         working-directory: build/ios/iphoneos
 
-      - name: Upload binaries to release
-        uses: svenstaro/upload-release-action@v2
+      - name: Upload TIPA
+        uses: actions/upload-artifact@v4
         with:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: build/ios/iphoneos/FlutterIpaExport.ipa
-          tag: v2.0
-          overwrite: true
-          body: "This is first release"
+          name: Standoff2_Injector
+          path: build/ios/iphoneos/Standoff2_Injector.tipa
+          if-no-files-found: error
