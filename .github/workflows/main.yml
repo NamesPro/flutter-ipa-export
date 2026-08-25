@@ -29,9 +29,10 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
-      # ⬇️ УДАЛИЛИ ЭТОТ ШАГ ⬇️
-      # - name: Generate code
-      #   run: dart run build_runner build --delete-conflicting-outputs
+      # ⬇️ ДОБАВЛЯЕМ ЭТОТ ШАГ ⬇️
+      - name: Install CocoaPods
+        run: pod install
+        working-directory: ios
 
       - name: Build unsigned IPA
         run: flutter build ipa --release --no-codesign
